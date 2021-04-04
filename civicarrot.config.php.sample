@@ -1,0 +1,3 @@
+<?php
+$CIVICARROT_USERNAME = 'github username';
+$CIVICARROT_TOKEN = 'personal access token with workflow privileges';
