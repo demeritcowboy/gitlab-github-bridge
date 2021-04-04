@@ -3,7 +3,8 @@ require_once 'civicarrot.config.php';
 
 header('Content-Type: text/plain');
 
-$fp = fopen('civicarrot.log', 'a');
+// TODO: more better
+$fp = fopen('../sites/default/files/civicrm/ConfigAndLog/civicarrot.log', 'a');
 
 // Check secret token
 $secret = $_SERVER['HTTP_X_GITLAB_TOKEN'] ?? NULL;
@@ -25,7 +26,16 @@ if ($request_body['object_kind'] !== 'merge_request'
 else {
   global $CIVICARROT_USERNAME, $CIVICARROT_TOKEN;
 
-  $result = `curl -u {$CIVICARROT_USERNAME}:{$CIVICARROT_TOKEN} -X POST -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/semperit/CiviCARROT/actions/workflows/main.yml/dispatches -d '{"ref":"main","inputs":{"prurl":"{$request_body['object_attributes']['url']}","repourl":"{$request_body['project']['git_http_url']}"}}'`;
+  switch ($_GET['type'] ?? 'mink') {
+    case 'plain':
+      $result = `curl -u {$CIVICARROT_USERNAME}:{$CIVICARROT_TOKEN} -X POST -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/semperit/CiviCARROT/actions/workflows/vanilla.yml/dispatches -d '{"ref":"main","inputs":{"prurl":"{$request_body['object_attributes']['url']}","repourl":"{$request_body['project']['git_http_url']}"}}'`;
+      break;
+    case 'mink':
+    default:
+      $result = `curl -u {$CIVICARROT_USERNAME}:{$CIVICARROT_TOKEN} -X POST -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/semperit/CiviCARROT/actions/workflows/main.yml/dispatches -d '{"ref":"main","inputs":{"prurl":"{$request_body['object_attributes']['url']}","repourl":"{$request_body['project']['git_http_url']}"}}'`;
+      break;
+  }
+
   if (empty($result)) {
 //    fwrite($fp, 'OK');
   }
