@@ -26,14 +26,21 @@ if ($request_body['object_kind'] !== 'merge_request'
 else {
   global $CIVICARROT_USERNAME, $CIVICARROT_TOKEN;
 
-  switch ($_GET['type'] ?? 'mink') {
-    case 'plain':
-      $result = `curl -u {$CIVICARROT_USERNAME}:{$CIVICARROT_TOKEN} -X POST -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/semperit/CiviCARROT/actions/workflows/vanilla.yml/dispatches -d '{"ref":"main","inputs":{"prurl":"{$request_body['object_attributes']['url']}","repourl":"{$request_body['project']['git_http_url']}"}}'`;
-      break;
-    case 'mink':
-    default:
-      $result = `curl -u {$CIVICARROT_USERNAME}:{$CIVICARROT_TOKEN} -X POST -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/semperit/CiviCARROT/actions/workflows/main.yml/dispatches -d '{"ref":"main","inputs":{"prurl":"{$request_body['object_attributes']['url']}","repourl":"{$request_body['project']['git_http_url']}"}}'`;
-      break;
+  $result = '';
+  $type = $_GET['type'] ?? 'all';
+  $json = json_encode(array(
+    'ref' => 'main',
+    'inputs' => array(
+      'prurl' => $request_body['object_attributes']['url'],
+      'repourl' => $request_body['project']['git_http_url'],
+    ),
+  ));
+  // TODO: How should the $json parameter get quoted/escaped? escapeshellarg() seems to muck it up. If it comes from gitlab it should be ok, but we can't guarantee that. Maybe easiest is if it contains a single quote, @, pipe, angle bracket, etc just reject it, since it never should.
+  if ($type === 'all' || $type === 'plain') {
+    $result .= `curl -u {$CIVICARROT_USERNAME}:{$CIVICARROT_TOKEN} -X POST -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/semperit/CiviCARROT/actions/workflows/vanilla.yml/dispatches -d '{$json}'`;
+  }
+  if ($type === 'all' || $type === 'mink') {
+    $result .= `curl -u {$CIVICARROT_USERNAME}:{$CIVICARROT_TOKEN} -X POST -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/semperit/CiviCARROT/actions/workflows/main.yml/dispatches -d '{$json}'`;
   }
 
   if (empty($result)) {
