@@ -1,0 +1,7 @@
+gitlabgithubbridge.triggerworkflow:
+  path: '/gitlabgithubbridge/{type}'
+  defaults:
+    _controller: '\Drupal\gitlabgithubbridge\Controller\WorkflowController::run'
+    _title: 'Gitlab Github Bridge'
+  requirements:
+    _custom_access: '\Drupal\gitlabgithubbridge\Controller\WorkflowController::checkAccess'

@@ -1,0 +1,6 @@
+{
+    "name": "semperit/gitlab-github-bridge",
+    "description": "Gitlab-Github bridge",
+    "type": "drupal-module",
+    "license": "proprietary"
+}
