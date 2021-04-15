@@ -5,6 +5,8 @@ namespace Drupal\gitlabgithubbridge\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Config\ConfigFactory;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\Core\Mail\MailManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -37,14 +39,14 @@ class WorkflowController extends ControllerBase {
    *
    * @param \Drupal\Core\Config\ConfigFactory $config
    *   An instance of ConfigFactory.
-   * @param \Psr\Log\LoggerInterface $logger
-   *   The system logger.
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
+   *   The logger factory.
    * @param \Drupal\Core\Mail\MailManagerInterface
    *   Mailer
    */
-  public function __construct(ConfigFactory $config, LoggerInterface $logger, MailManagerInterface $mailer) {
+  public function __construct(ConfigFactory $config, LoggerChannelFactoryInterface $logger_factory, MailManagerInterface $mailer) {
     $this->config = $config->get('gitlabgithubbridge.settings');
-    $this->logger = $logger;
+    $this->logger = $logger_factory->get('gitlabgithubbridge');
     $this->mailer = $mailer;
   }
 
