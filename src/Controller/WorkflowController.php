@@ -81,10 +81,11 @@ class WorkflowController extends ControllerBase {
       if (!empty($email)) {
         $this->mailer->mail('gitlabgithubbridge', 'merge_objects_only', $email, 'en', []);
       }
+      // fall through to end
     }
     else {
       require_once __DIR__ . '/../../civicarrot.config.php';
-      global $CIVICARROT_USERNAME, $CIVICARROT_TOKEN;
+      global $CIVICARROT_USERNAME, $CIVICARROT_TOKEN, $CIVICARROT_VERIFYSSL;
       $response_str = '';
 
       $json = json_encode(array(
@@ -108,8 +109,7 @@ class WorkflowController extends ControllerBase {
         CURLOPT_POSTFIELDS => $json,
         CURLOPT_CONNECTTIMEOUT => 30,
         CURLOPT_USERAGENT => 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)',
-        // Should probably make this true but for testing locally it's always a problem.
-        CURLOPT_SSL_VERIFYPEER => FALSE,
+        CURLOPT_SSL_VERIFYPEER => $CIVICARROT_VERIFYSSL,
         CURLOPT_FOLLOWLOCATION => 1,
         CURLOPT_COOKIEFILE => $cookie_file_path,
         CURLOPT_COOKIEJAR => $cookie_file_path,
@@ -118,12 +118,12 @@ class WorkflowController extends ControllerBase {
       if ($type === 'all' || $type === 'plain') {
         // This is identical to mink it's just a different workflow file.
         curl_setopt_array($curl, array_merge($curl_params, array(CURLOPT_URL => 'https://api.github.com/repos/semperit/CiviCARROT/actions/workflows/vanilla.yml/dispatches')));
-        $response_str = curl_exec($curl);
+        $response_str .= curl_exec($curl);
       }
 
       if ($type === 'all' || $type === 'mink') {
         curl_setopt_array($curl, $curl_params);
-        $response_str = curl_exec($curl);
+        $response_str .= curl_exec($curl);
       }
 
       curl_close($curl);
@@ -134,13 +134,6 @@ class WorkflowController extends ControllerBase {
           $this->mailer->mail('gitlabgithubbridge', 'trigger_failure', $email, 'en', ['result' => $response_str]);
         }
       }
-      /*
-        $response = new Response(
-          '<pre>' . print_r($request->server->all(), true) . '</pre>',
-          Response::HTTP_OK,
-          ['content-type' => 'text/html']
-        );
-       */
     }
 
     $response = new JsonResponse(['status' => 'Ok']);
@@ -153,11 +146,30 @@ class WorkflowController extends ControllerBase {
   public function checkAccess($type) {
     $secret = $_SERVER['HTTP_X_GITLAB_TOKEN'] ?? NULL;
     if (!empty($secret)) {
-      // Here we would look thru our list of people who have signed up for
-      // the service and see if it's a real token.
-      return AccessResult::allowed();
+      // Look thru our list of people who have signed up for the service and
+      // see if it's a real token.
+      \Drupal::service('civicrm')->initialize();
+      $result = \Civi\Api4\Contact::get(FALSE)
+        // format is `custom_group.name`.`custom_field.name`
+        ->addWhere('CiviCarrot.Token', '=', $secret)
+        ->setLimit(1)->addSelect('id')
+        ->execute()->first();
+      if (!is_null($result)) {
+        $this->logger->info('CiviCARROT token used: @token', ['@token' => $secret]);
+        // @todo Do we care about stats on which $type? It would be mostly
+        // for fun since if billing it would depend on resources used.
+        \Civi\Api4\Activity::create(FALSE)
+          ->addValue('activity_type_id:name', 'CiviCarrot')
+          ->addValue('status_id:name', 'Completed')
+          ->addValue('subject', 'Ate a Carrot')
+          ->addValue('target_contact_id', [$result['id']])
+          ->addValue('source_contact_id', $result['id'])
+          ->execute();
+        return AccessResult::allowed();
+      }
+      // fall through
     }
-    $this->logger->info('Invalid token');
+    $this->logger->warning('Invalid token: @token', ['@token' => $secret]);
     return AccessResult::forbidden();
   }
 
