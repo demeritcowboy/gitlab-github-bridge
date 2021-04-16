@@ -84,10 +84,6 @@ class WorkflowController extends ControllerBase {
       // fall through to end
     }
     else {
-      require_once __DIR__ . '/../../civicarrot.config.php';
-      global $CIVICARROT_USERNAME, $CIVICARROT_TOKEN, $CIVICARROT_VERIFYSSL;
-      $response_str = '';
-
       $json = json_encode(array(
         'ref' => 'main',
         'inputs' => array(
@@ -104,16 +100,18 @@ class WorkflowController extends ControllerBase {
         CURLOPT_HEADER => FALSE,
         CURLOPT_URL => 'https://api.github.com/repos/semperit/CiviCARROT/actions/workflows/main.yml/dispatches',
         CURLOPT_HTTPHEADER => array('Content-type: application/json', 'Accept: application/vnd.github.v3+json'),
-        CURLOPT_USERPWD => "{$CIVICARROT_USERNAME}:{$CIVICARROT_TOKEN}",
+        CURLOPT_USERPWD => $this->config->get('gitlabgithubbridge.username') . ":" . $this->config->get('gitlabgithubbridge.password'),
         CURLOPT_POST => TRUE,
         CURLOPT_POSTFIELDS => $json,
         CURLOPT_CONNECTTIMEOUT => 30,
         CURLOPT_USERAGENT => 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)',
-        CURLOPT_SSL_VERIFYPEER => $CIVICARROT_VERIFYSSL,
+        CURLOPT_SSL_VERIFYPEER => $this->config->get('gitlabgithubbridge.verifyssl'),
         CURLOPT_FOLLOWLOCATION => 1,
         CURLOPT_COOKIEFILE => $cookie_file_path,
         CURLOPT_COOKIEJAR => $cookie_file_path,
       );
+
+      $response_str = '';
 
       if ($type === 'all' || $type === 'plain') {
         // This is identical to mink it's just a different workflow file.

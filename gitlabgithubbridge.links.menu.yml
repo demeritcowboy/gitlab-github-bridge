@@ -1,0 +1,5 @@
+gitlabgithubbridge.settings:
+  title: 'Gitlab Github Bridge Settings'
+  parent: system.admin_config_services
+  description: 'Settings to bridge between gitlab and github.'
+  route_name: gitlabgithubbridge.settings

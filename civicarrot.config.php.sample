@@ -1,7 +1,0 @@
-<?php
-// Copy this file to civicarrot.config.php and edit that
-$CIVICARROT_USERNAME = 'github username';
-$CIVICARROT_TOKEN = 'personal access token with workflow privileges';
-
-// When testing locally setting this to false will save headache.
-$CIVICARROT_VERIFYSSL = TRUE;

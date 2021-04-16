@@ -5,3 +5,10 @@ gitlabgithubbridge.triggerworkflow:
     _title: 'Gitlab Github Bridge'
   requirements:
     _custom_access: '\Drupal\gitlabgithubbridge\Controller\WorkflowController::checkAccess'
+gitlabgithubbridge.settings:
+  path: '/admin/config/services/gitlabgithubbridge'
+  defaults:
+    _form: '\Drupal\gitlabgithubbridge\Form\SettingsForm'
+    _title: 'Gitlab Github Bridge Settings'
+  requirements:
+    _permission: 'administer site configuration'
