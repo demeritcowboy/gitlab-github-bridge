@@ -115,13 +115,27 @@ class WorkflowController extends ControllerBase {
 
       if ($type === 'all' || $type === 'plain') {
         // This is identical to mink it's just a different workflow file.
-        curl_setopt_array($curl, array_merge($curl_params, array(CURLOPT_URL => 'https://api.github.com/repos/semperit/CiviCARROT/actions/workflows/vanilla.yml/dispatches')));
-        $response_str .= curl_exec($curl);
+        curl_setopt_array($curl, array_replace($curl_params, array(CURLOPT_URL => 'https://api.github.com/repos/semperit/CiviCARROT/actions/workflows/vanilla.yml/dispatches')));
+        $exec_result = curl_exec($curl);
+        if ($exec_result === FALSE) {
+          $this->logger->debug("curlerr: " . curl_error($curl));
+          $this->logger->debug(print_r(curl_getinfo($curl), true));
+        }
+        else {
+          $response_str .= $exec_result;
+        }
       }
 
       if ($type === 'all' || $type === 'mink') {
         curl_setopt_array($curl, $curl_params);
-        $response_str .= curl_exec($curl);
+        $exec_result = curl_exec($curl);
+        if ($exec_result === FALSE) {
+          $this->logger->debug("curlerr: " . curl_error($curl));
+          $this->logger->debug(print_r(curl_getinfo($curl), true));
+        }
+        else {
+          $response_str .= $exec_result;
+        }
       }
 
       curl_close($curl);
