@@ -10,11 +10,9 @@ use Drupal\Core\Mail\MailManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
-use Psr\Log\LoggerInterface;
 
 /**
- *
+ * Controller for when webhooks come in from gitlab.
  */
 class WorkflowController extends ControllerBase {
 
@@ -28,7 +26,7 @@ class WorkflowController extends ControllerBase {
   protected $logger;
 
   /**
-   * Mailer.
+   * The system mailer
    *
    * @var \Drupal\Core\Mail\MailManagerInterface
    */
@@ -41,8 +39,8 @@ class WorkflowController extends ControllerBase {
    *   An instance of ConfigFactory.
    * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
    *   The logger factory.
-   * @param \Drupal\Core\Mail\MailManagerInterface
-   *   Mailer
+   * @param \Drupal\Core\Mail\MailManagerInterface $mailer
+   *   The system mailer.
    */
   public function __construct(ConfigFactory $config, LoggerChannelFactoryInterface $logger_factory, MailManagerInterface $mailer) {
     $this->config = $config->get('gitlabgithubbridge.settings');
@@ -64,8 +62,8 @@ class WorkflowController extends ControllerBase {
   /**
    * Process the request body from a merge request webhook on gitlab
    * @param string $type Either all, plain, or mink.
-   * @param Request $reqest
-   * @return JsonResponse
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   * @return \Symfony\Component\HttpFoundation\JsonResponse
    *   It's always "status":"Ok"
    */
   public function run($type, Request $request): JsonResponse {
@@ -73,33 +71,44 @@ class WorkflowController extends ControllerBase {
 
     $email = !empty($request_body['user']['email']) ? $request_body['user']['email'] : NULL;
 
-    if (empty($request_body)
-      || $request_body['object_kind'] !== 'merge_request'
-      || $request_body['event_type'] !== 'merge_request'
-      || $request_body['object_attributes']['state'] !== 'opened') {
-      $this->logger->info('Only open merge_request objects are allowed.');
+    if (empty($request_body)) {
+      $this->logger->warn('Empty request body?');
+      // fall through to end
+    }
+    elseif ($request_body['object_kind'] === 'merge_request'
+      && $request_body['event_type'] === 'merge_request'
+      && $request_body['object_attributes']['state'] !== 'opened') {
+      // I don't think it makes sense to do anything here - the MR was likely
+      // merged or closed. Notifying about this in case they thought it should
+      // do something would annoy anyone else every time they closed/merged one.
+
+      // fall through to end
+    }
+    elseif ($request_body['object_kind'] !== 'merge_request'
+      || $request_body['event_type'] !== 'merge_request') {
+      $this->logger->info('Only open merge_request events are allowed.');
       if (!empty($email)) {
         $this->mailer->mail('gitlabgithubbridge', 'merge_objects_only', $email, 'en', []);
       }
       // fall through to end
     }
     else {
-      $json = json_encode(array(
+      $json = json_encode([
         'ref' => 'main',
-        'inputs' => array(
+        'inputs' => [
           'prurl' => $request_body['object_attributes']['url'],
           'repourl' => $request_body['project']['git_http_url'],
           'notifyemail' => $email,
-        ),
-      ));
+        ],
+      ]);
 
       $curl = curl_init();
       $cookie_file_path = tempnam(sys_get_temp_dir(), 'coo');
-      $curl_params = array(
+      $curl_params = [
         CURLOPT_RETURNTRANSFER => 1,
         CURLOPT_HEADER => FALSE,
         CURLOPT_URL => 'https://api.github.com/repos/semperit/CiviCARROT/actions/workflows/main.yml/dispatches',
-        CURLOPT_HTTPHEADER => array('Content-type: application/json', 'Accept: application/vnd.github.v3+json'),
+        CURLOPT_HTTPHEADER => ['Content-type: application/json', 'Accept: application/vnd.github.v3+json'],
         CURLOPT_USERPWD => $this->config->get('gitlabgithubbridge.username') . ":" . $this->config->get('gitlabgithubbridge.password'),
         CURLOPT_POST => TRUE,
         CURLOPT_POSTFIELDS => $json,
@@ -109,17 +118,17 @@ class WorkflowController extends ControllerBase {
         CURLOPT_FOLLOWLOCATION => 1,
         CURLOPT_COOKIEFILE => $cookie_file_path,
         CURLOPT_COOKIEJAR => $cookie_file_path,
-      );
+      ];
 
       $response_str = '';
 
       if ($type === 'all' || $type === 'plain') {
         // This is identical to mink it's just a different workflow file.
-        curl_setopt_array($curl, array_replace($curl_params, array(CURLOPT_URL => 'https://api.github.com/repos/semperit/CiviCARROT/actions/workflows/vanilla.yml/dispatches')));
+        curl_setopt_array($curl, array_replace($curl_params, [CURLOPT_URL => 'https://api.github.com/repos/semperit/CiviCARROT/actions/workflows/vanilla.yml/dispatches']));
         $exec_result = curl_exec($curl);
         if ($exec_result === FALSE) {
           $this->logger->debug("curlerr: " . curl_error($curl));
-          $this->logger->debug(print_r(curl_getinfo($curl), true));
+          $this->logger->debug(print_r(curl_getinfo($curl), TRUE));
         }
         else {
           $response_str .= $exec_result;
@@ -131,7 +140,7 @@ class WorkflowController extends ControllerBase {
         $exec_result = curl_exec($curl);
         if ($exec_result === FALSE) {
           $this->logger->debug("curlerr: " . curl_error($curl));
-          $this->logger->debug(print_r(curl_getinfo($curl), true));
+          $this->logger->debug(print_r(curl_getinfo($curl), TRUE));
         }
         else {
           $response_str .= $exec_result;
