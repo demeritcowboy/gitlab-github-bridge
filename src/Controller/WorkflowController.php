@@ -110,7 +110,7 @@ class WorkflowController extends ControllerBase {
           'prurl' => $request_body['object_attributes']['url'],
           'repourl' => $request_body['project']['git_http_url'],
           'notifyemail' => $email,
-          'activityid' => $this->cacheBackend->get('gitlabgithubbridge_activity_id') ?? 0,
+          'activityid' => (string) ($this->cacheBackend->get('gitlabgithubbridge_activity_id')->data ?? 0),
         ],
       ]);
 
