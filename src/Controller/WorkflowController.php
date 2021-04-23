@@ -33,6 +33,12 @@ class WorkflowController extends ControllerBase {
   protected $mailer;
 
   /**
+   * The civi activity id that gets created.
+   * @var int
+   */
+  protected $activity_id;
+
+  /**
    * WorkflowController constructor.
    *
    * @param \Drupal\Core\Config\ConfigFactory $config
@@ -99,6 +105,7 @@ class WorkflowController extends ControllerBase {
           'prurl' => $request_body['object_attributes']['url'],
           'repourl' => $request_body['project']['git_http_url'],
           'notifyemail' => $email,
+          'activityid' => $this->activity_id ?? 0,
         ],
       ]);
 
@@ -179,13 +186,14 @@ class WorkflowController extends ControllerBase {
         $this->logger->info('CiviCARROT token used: @token', ['@token' => $secret]);
         // @todo Do we care about stats on which $type? It would be mostly
         // for fun since if billing it would depend on resources used.
-        \Civi\Api4\Activity::create(FALSE)
+        $activity = \Civi\Api4\Activity::create(FALSE)
           ->addValue('activity_type_id:name', 'CiviCarrot')
           ->addValue('status_id:name', 'Completed')
           ->addValue('subject', 'Ate a Carrot')
           ->addValue('target_contact_id', [$result['id']])
           ->addValue('source_contact_id', $result['id'])
-          ->execute();
+          ->execute()->first();
+        $this->activity_id = $activity['id'];
         return AccessResult::allowed();
       }
       // fall through
