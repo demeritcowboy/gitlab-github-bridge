@@ -7,6 +7,7 @@ use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Mail\MailManagerInterface;
+use Drupal\Core\Cache\CacheFactoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -33,10 +34,10 @@ class WorkflowController extends ControllerBase {
   protected $mailer;
 
   /**
-   * The civi activity id that gets created.
-   * @var int
+   * Cache to store activity id
+   * @var \Drupal\Core\Cache\CacheBackendInterface
    */
-  protected $activity_id;
+  protected $cacheBackend;
 
   /**
    * WorkflowController constructor.
@@ -47,11 +48,14 @@ class WorkflowController extends ControllerBase {
    *   The logger factory.
    * @param \Drupal\Core\Mail\MailManagerInterface $mailer
    *   The system mailer.
+   * @param \Drupal\Core\Cache\CacheFactoryInterface $cacheFactory
+   *   The cache factory.
    */
-  public function __construct(ConfigFactory $config, LoggerChannelFactoryInterface $logger_factory, MailManagerInterface $mailer) {
+  public function __construct(ConfigFactory $config, LoggerChannelFactoryInterface $logger_factory, MailManagerInterface $mailer, CacheFactoryInterface $cacheFactory) {
     $this->config = $config->get('gitlabgithubbridge.settings');
     $this->logger = $logger_factory->get('gitlabgithubbridge');
     $this->mailer = $mailer;
+    $this->cacheBackend = $cacheFactory->get('default');
   }
 
   /**
@@ -61,7 +65,8 @@ class WorkflowController extends ControllerBase {
     return new static(
       $container->get('config.factory'),
       $container->get('logger.factory'),
-      $container->get('plugin.manager.mail')
+      $container->get('plugin.manager.mail'),
+      $container->get('cache_factory')
     );
   }
 
@@ -105,7 +110,7 @@ class WorkflowController extends ControllerBase {
           'prurl' => $request_body['object_attributes']['url'],
           'repourl' => $request_body['project']['git_http_url'],
           'notifyemail' => $email,
-          'activityid' => $this->activity_id ?? 0,
+          'activityid' => $this->cacheBackend->get('gitlabgithubbridge_activity_id') ?? 0,
         ],
       ]);
 
@@ -193,7 +198,7 @@ class WorkflowController extends ControllerBase {
           ->addValue('target_contact_id', [$result['id']])
           ->addValue('source_contact_id', $result['id'])
           ->execute()->first();
-        $this->activity_id = $activity['id'];
+        $this->cacheBackend->set('gitlabgithubbridge_activity_id', $activity['id']);
         return AccessResult::allowed();
       }
       // fall through
