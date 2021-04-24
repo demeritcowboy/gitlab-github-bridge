@@ -93,9 +93,9 @@ class GithubUsageResource extends ResourceBase {
         ->addValue('id', $data['id'])
         ->addValue("Carrot_Data.Bytes_used{$field_suffix}", $data['bytes'])
         ->addValue("Carrot_Data.Seconds_used{$field_suffix}", $data['seconds'])
-        // These next three will get updated twice if you've chosen to run both
+        ->addValue("Carrot_Data.run_id{$field_suffix}", $data['run_id'])
+        // These next two will get updated twice if you've chosen to run both
         // types, but it's the same info for both so don't care.
-        ->addValue('Carrot_Data.run_id', $data['run_id'])
         ->addValue('Carrot_Data.Repository', empty($data['repo']) ? '' : $data['repo'])
         ->addValue('Carrot_Data.Merge_Request', empty($data['pr']) ? '' : $data['pr'])
         ->execute();
