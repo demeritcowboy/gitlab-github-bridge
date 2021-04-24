@@ -2,7 +2,6 @@
 
 namespace Drupal\gitlabgithubbridge\Plugin\rest\resource;
 
-use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\rest\Plugin\ResourceBase;
 use Drupal\rest\ModifiedResourceResponse;
 use Psr\Log\LoggerInterface;
@@ -67,7 +66,7 @@ class GithubUsageResource extends ResourceBase {
    * @throws \Symfony\Component\HttpKernel\Exception\HttpException
    */
   public function post($data = NULL) {
-    $this->logger->info('Carrot usage: ' . print_r($data, true));
+    $this->logger->info('Carrot usage: ' . print_r($data, TRUE));
 
     if (empty($data['id'])) {
       throw new BadRequestHttpException('No id received.');
@@ -81,12 +80,19 @@ class GithubUsageResource extends ResourceBase {
       throw new BadRequestHttpException('Data received is not numeric.');
     }
 
+    // There's two sets of fields - the one without a suffix is for mink
+    // tests, the _plain one is for data coming from regular unit tests.
+    $field_suffix = '';
+    if (($data['type'] ?? NULL) == 'plain') {
+      $field_suffix = '_plain';
+    }
+
     try {
       \Drupal::service('civicrm')->initialize();
       \Civi\Api4\Activity::update(FALSE)
         ->addValue('id', $data['id'])
-        ->addValue('Carrot_Data.Bytes_used', $data['bytes'])
-        ->addValue('Carrot_Data.Seconds_used', $data['seconds'])
+        ->addValue("Carrot_Data.Bytes_used{$field_suffix}", $data['bytes'])
+        ->addValue("Carrot_Data.Seconds_used{$field_suffix}", $data['seconds'])
         ->execute();
 
       return new ModifiedResourceResponse(['status' => 'Ok']);
