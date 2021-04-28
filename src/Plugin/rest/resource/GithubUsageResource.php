@@ -92,7 +92,8 @@ class GithubUsageResource extends ResourceBase {
       \Civi\Api4\Activity::update(FALSE)
         ->addValue('id', $data['id'])
         ->addValue("Carrot_Data.Bytes_used{$field_suffix}", $data['bytes'])
-        ->addValue("Carrot_Data.Seconds_used{$field_suffix}", $data['seconds'])
+        // For now, just approximate the time that was used during initialization before the script even started. It's about 36 seconds.
+        ->addValue("Carrot_Data.Seconds_used{$field_suffix}", $data['seconds'] + 36)
         ->addValue("Carrot_Data.run_id{$field_suffix}", $data['run_id'])
         // These next two will get updated twice if you've chosen to run both
         // types, but it's the same info for both so don't care.
