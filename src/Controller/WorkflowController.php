@@ -104,9 +104,26 @@ class WorkflowController extends ControllerBase {
       // fall through to end
     }
     else {
+      // Look up what numeric version civi master is, then figure out release candidate version.
+      $civiver = NULL;
+      $versionxml = simplexml_load_file('https://raw.githubusercontent.com/civicrm/civicrm-core/master/xml/version.xml');
+      if (!empty($versionxml)) {
+        $civiver = (string) $versionxml->version_no;
+      }
+      if (!empty($civiver)) {
+        $ver_parts = explode('.', $civiver);
+        if (empty($ver_parts[1])) {
+          $civiver = NULL;
+        }
+        else {
+          $civiver = $ver_parts[0] . '.' . ($ver_parts[1] - 1) . '.x-dev';
+        }
+      }
+
       $json = json_encode([
         'ref' => 'main',
         'inputs' => [
+          'civiver' => (empty($civiver) ? 'dev-master' : $civiver),
           'prurl' => $request_body['object_attributes']['url'],
           'repourl' => $request_body['project']['git_http_url'],
           'notifyemail' => $email,
