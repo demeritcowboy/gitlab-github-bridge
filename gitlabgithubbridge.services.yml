@@ -1,0 +1,4 @@
+services:
+  Drupal\gitlabgithubbridge\MergeRequestService:
+    class: Drupal\gitlabgithubbridge\MergeRequestService
+    arguments: ['@config.factory', '@logger.factory']

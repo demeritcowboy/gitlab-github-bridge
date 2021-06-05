@@ -15,3 +15,16 @@ function gitlabgithubbridge_mail($key, &$message, $params) {
       break;
   }
 }
+
+function gitlabgithubbridge_webform_submission_insert($submission) {
+  if (!is_a($submission, '\Drupal\webform\Entity\WebformSubmission')) {
+    return;
+  }
+  // Only act on the merge request form.
+  if ($submission->getWebform()->id() != 'civicarrot_dispatch_merge_reques') {
+    return;
+  }
+  $repourl = $submission->getElementData('civicrm_2_contact_1_cg4_custom_11') ?? NULL;
+
+  \Drupal::getContainer()->get('Drupal\gitlabgithubbridge\MergeRequestService')->run($repourl);
+}
