@@ -78,6 +78,7 @@ class MergeRequestService implements MergeRequestServiceInterface {
       CURLOPT_COOKIEFILE => $cookie_file_path,
       CURLOPT_COOKIEJAR => $cookie_file_path,
     ];
+    curl_setopt_array($curl, $curl_params);
 
     $response_str = '';
 
