@@ -54,6 +54,11 @@ class MergeRequestService implements MergeRequestServiceInterface {
       return;
     }
 
+    // add .git on the end if not present
+    if ('.git' !== strtolower(substr($repourl, -4, 4))) {
+      $repourl .= '.git';
+    }
+
     $json = json_encode([
       'ref' => 'main',
       'inputs' => [
