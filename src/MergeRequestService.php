@@ -54,6 +54,8 @@ class MergeRequestService implements MergeRequestServiceInterface {
       return;
     }
 
+    // remove trailing slash if present
+    $repourl = rtrim($repourl, '/');
     // add .git on the end if not present
     if ('.git' !== strtolower(substr($repourl, -4, 4))) {
       $repourl .= '.git';
