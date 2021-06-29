@@ -104,12 +104,10 @@ class WorkflowController extends ControllerBase {
       // fall through to end
     }
     else {
-      $civiver = $this->getCurrentCiviReleaseCandidate();
-
       $json = json_encode([
         'ref' => 'main',
         'inputs' => [
-          'civiver' => (empty($civiver) ? 'dev-master' : $civiver),
+          'matrix' => $this->assembleMatrix($request_body['project']['git_http_url'], $request_body['object_attributes']['source_branch']),
           'prurl' => $request_body['object_attributes']['url'],
           'repourl' => $request_body['project']['git_http_url'],
           'notifyemail' => $email,
@@ -231,6 +229,53 @@ class WorkflowController extends ControllerBase {
       }
     }
     return $civiver;
+  }
+
+  /**
+   * Determine the desired testing matrix based on the values in info.xml
+   * @param string $repourl
+   * @param string $branch The git branch for the PR
+   * @return string A JSON string suitable for github actions matrix
+   */
+  private function assembleMatrix(string $repourl, string $branch): string {
+    $repourl = $this->removeDotGit($repourl);
+    $infoxml = simplexml_load_file("{$repourl}/-/raw/{$branch}/info.xml");
+    $matrix = [];
+    if (empty($infoxml->carrot->singlePR->phpversions->version)) {
+      $matrix['php-versions'] = [$this->config->get('gitlabgithubbridge.phpver')];
+    }
+    else {
+      // This should already come out as an array, but needs cast because simplxml is objecty
+      $matrix['php-versions'] = (array) $infoxml->carrot->singlePR->phpversions->version;
+    }
+
+    if (empty($infoxml->carrot->singlePR->cmsversions->version)) {
+      $matrix['drupal'] = [$this->config->get('gitlabgithubbridge.cmsver')];
+    }
+    else {
+      $matrix['drupal'] = (array) $infoxml->carrot->singlePR->cmsversions->version;
+    }
+
+    if (empty($infoxml->carrot->singlePR->civiversions->version)) {
+      $matrix['civicrm'] = [$this->getCurrentCiviReleaseCandidate() ?? 'dev-master'];
+    }
+    else {
+      $matrix['civicrm'] = (array) $infoxml->carrot->singlePR->civiversions->version;
+    }
+
+    return json_encode($matrix);
+  }
+
+  /**
+   * Removes .git on the end if present
+   * @param string $s
+   * @return string
+   */
+  private function removeDotGit(string $s): string {
+    if (substr($s, -4, 4) === '.git') {
+      return substr($s, 0, -4);
+    }
+    return $s;
   }
 
 }

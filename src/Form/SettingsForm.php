@@ -55,6 +55,19 @@ class SettingsForm extends ConfigFormBase {
       '#return_value' => 1,
     );
 
+    $form['gitlabgithubbridge_cmsver'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Default Drupal version'),
+      '#default_value' => (empty($config->get('gitlabgithubbridge.cmsver')) ? \Drupal::VERSION : $config->get('gitlabgithubbridge.cmsver')),
+      '#description' => $this->t('Version to use for the matrix if not specified by the extension. Note the default CiviCRM version is always the release candidate version if not specified by the extension.'),
+    );
+
+    $form['gitlabgithubbridge_phpver'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Default php version'),
+      '#default_value' => (empty($config->get('gitlabgithubbridge.phpver')) ? phpversion() : $config->get('gitlabgithubbridge.phpver')),
+    );
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -66,6 +79,8 @@ class SettingsForm extends ConfigFormBase {
       ->set('gitlabgithubbridge.username', $form_state->getValue('gitlabgithubbridge_username'))
       ->set('gitlabgithubbridge.password', $form_state->getValue('gitlabgithubbridge_password'))
       ->set('gitlabgithubbridge.verifyssl', $form_state->getValue('gitlabgithubbridge_verifyssl'))
+      ->set('gitlabgithubbridge.cmsver', $form_state->getValue('gitlabgithubbridge_cmsver'))
+      ->set('gitlabgithubbridge.phpver', $form_state->getValue('gitlabgithubbridge_phpver'))
       ->save();
 
     parent::submitForm($form, $form_state);
