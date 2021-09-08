@@ -11,6 +11,7 @@ use Drupal\Core\Cache\CacheFactoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Drupal\gitlabgithubbridge\Matrix\MatrixBuilder;
 
 /**
  * Controller for when webhooks come in from gitlab.
@@ -107,7 +108,7 @@ class WorkflowController extends ControllerBase {
       $json = json_encode([
         'ref' => 'main',
         'inputs' => [
-          'matrix' => $this->assembleMatrix($request_body['project']['git_http_url'], $request_body['object_attributes']['source_branch']),
+          'matrix' => $this->assembleMatrix($request_body['project']['git_http_url'], $request_body['object_attributes']['last_commit']['id']),
           'prurl' => $request_body['object_attributes']['url'],
           'repourl' => $request_body['project']['git_http_url'],
           'notifyemail' => $email,
@@ -209,73 +210,13 @@ class WorkflowController extends ControllerBase {
   }
 
   /**
-   * Want to find out what the current release candidate is.
-   * Look up what numeric version civi master is, then figure out release candidate version from that.
-   * @return ?string
-   */
-  private function getCurrentCiviReleaseCandidate(): ?string {
-    $civiver = NULL;
-    $versionxml = simplexml_load_file('https://raw.githubusercontent.com/civicrm/civicrm-core/master/xml/version.xml');
-    if (!empty($versionxml)) {
-      $civiver = (string) $versionxml->version_no;
-    }
-    if (!empty($civiver)) {
-      $ver_parts = explode('.', $civiver);
-      if (empty($ver_parts[1])) {
-        $civiver = NULL;
-      }
-      else {
-        $civiver = $ver_parts[0] . '.' . ($ver_parts[1] - 1) . '.x-dev';
-      }
-    }
-    return $civiver;
-  }
-
-  /**
-   * Determine the desired testing matrix based on the values in info.xml
+   * Assemble the testing matrix.
    * @param string $repourl
-   * @param string $branch The git branch for the PR
+   * @param string $commit The latest git commit for the PR
    * @return string A JSON string suitable for github actions matrix
    */
-  private function assembleMatrix(string $repourl, string $branch): string {
-    $repourl = $this->removeDotGit($repourl);
-    $infoxml = simplexml_load_file("{$repourl}/-/raw/{$branch}/info.xml");
-    $matrix = [];
-    if (empty($infoxml->carrot->singlePR->phpversions->version)) {
-      $matrix['php-versions'] = [$this->config->get('gitlabgithubbridge.phpver')];
-    }
-    else {
-      // This should already come out as an array, but needs cast because simplxml is objecty
-      $matrix['php-versions'] = (array) $infoxml->carrot->singlePR->phpversions->version;
-    }
-
-    if (empty($infoxml->carrot->singlePR->cmsversions->version)) {
-      $matrix['drupal'] = [$this->config->get('gitlabgithubbridge.cmsver')];
-    }
-    else {
-      $matrix['drupal'] = (array) $infoxml->carrot->singlePR->cmsversions->version;
-    }
-
-    if (empty($infoxml->carrot->singlePR->civiversions->version)) {
-      $matrix['civicrm'] = [$this->getCurrentCiviReleaseCandidate() ?? 'dev-master'];
-    }
-    else {
-      $matrix['civicrm'] = (array) $infoxml->carrot->singlePR->civiversions->version;
-    }
-
-    return json_encode($matrix);
-  }
-
-  /**
-   * Removes .git on the end if present
-   * @param string $s
-   * @return string
-   */
-  private function removeDotGit(string $s): string {
-    if (substr($s, -4, 4) === '.git') {
-      return substr($s, 0, -4);
-    }
-    return $s;
+  private function assembleMatrix(string $repourl, string $commit): string {
+    return (new MatrixBuilder($repourl, $commit))->build();
   }
 
 }
