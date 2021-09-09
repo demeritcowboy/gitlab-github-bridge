@@ -80,23 +80,19 @@ class GithubUsageResource extends ResourceBase {
       throw new BadRequestHttpException('Data received is not numeric.');
     }
 
-    // There's two sets of fields - the one without a suffix is for mink
-    // tests, the _plain one is for data coming from regular unit tests.
-    $field_suffix = '';
-    if (($data['type'] ?? NULL) == 'plain') {
-      $field_suffix = '_plain';
-    }
-
     try {
       \Drupal::service('civicrm')->initialize();
-      \Civi\Api4\Activity::update(FALSE)
-        ->addValue('id', $data['id'])
-        ->addValue("Carrot_Data.Bytes_used{$field_suffix}", $data['bytes'])
+      \Civi\Api4\Activity::create(FALSE)
+        ->addValue('activity_type_id:name', 'CiviCarrot')
+        ->addValue('status_id:name', 'Completed')
+        ->addValue('subject', 'Ate a Carrot')
+        ->addValue('target_contact_id', $data['id'])
+        ->addValue('source_contact_id', $data['id'])
+        ->addValue('Carrot_Data.Test_type', $data['type'] ?? 'mink')
+        ->addValue('Carrot_Data.Bytes_used', $data['bytes'])
         // For now, just approximate the time that was used during initialization before the script even started. It's about 36 seconds.
-        ->addValue("Carrot_Data.Seconds_used{$field_suffix}", $data['seconds'] + 36)
-        ->addValue("Carrot_Data.run_id{$field_suffix}", $data['run_id'])
-        // These next two will get updated twice if you've chosen to run both
-        // types, but it's the same info for both so don't care.
+        ->addValue('Carrot_Data.Seconds_used', $data['seconds'] + 36)
+        ->addValue('Carrot_Data.run_id', $data['run_id'])
         ->addValue('Carrot_Data.Repository', empty($data['repo']) ? '' : $data['repo'])
         ->addValue('Carrot_Data.Merge_Request', empty($data['pr']) ? '' : $data['pr'])
         ->execute();

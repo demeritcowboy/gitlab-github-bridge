@@ -35,7 +35,7 @@ class WorkflowController extends ControllerBase {
   protected $mailer;
 
   /**
-   * Cache to store activity id
+   * Cache to store contact id
    * @var \Drupal\Core\Cache\CacheBackendInterface
    */
   protected $cacheBackend;
@@ -112,7 +112,7 @@ class WorkflowController extends ControllerBase {
           'prurl' => $request_body['object_attributes']['url'],
           'repourl' => $request_body['project']['git_http_url'],
           'notifyemail' => $email,
-          'activityid' => (string) ($this->cacheBackend->get('gitlabgithubbridge_activity_id')->data ?? 0),
+          'contactid' => (string) ($this->cacheBackend->get('gitlabgithubbridge_contact_id')->data ?? 0),
         ],
       ]);
 
@@ -191,16 +191,7 @@ class WorkflowController extends ControllerBase {
         ->execute()->first();
       if (!is_null($result)) {
         $this->logger->info('CiviCARROT token used: @token', ['@token' => $secret]);
-        // @todo Do we care about stats on which $type? It would be mostly
-        // for fun since if billing it would depend on resources used.
-        $activity = \Civi\Api4\Activity::create(FALSE)
-          ->addValue('activity_type_id:name', 'CiviCarrot')
-          ->addValue('status_id:name', 'Completed')
-          ->addValue('subject', 'Ate a Carrot')
-          ->addValue('target_contact_id', [$result['id']])
-          ->addValue('source_contact_id', $result['id'])
-          ->execute()->first();
-        $this->cacheBackend->set('gitlabgithubbridge_activity_id', $activity['id']);
+        $this->cacheBackend->set('gitlabgithubbridge_contact_id', $result['id']);
         return AccessResult::allowed();
       }
       // fall through
