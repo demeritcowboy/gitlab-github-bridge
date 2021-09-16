@@ -11,6 +11,9 @@ class MatrixBuilder {
   const CIVICARROT_DRUPAL_PRIOR = 5;
   const CIVICARROT_PHP_SENSIBLE = 6;
 
+  const SINGLEPR = 'singlePR';
+  const PERIODIC = 'periodic';
+
   /**
    * @var array
    * Cache of packagist data.
@@ -43,16 +46,21 @@ class MatrixBuilder {
    * Determine the desired testing matrix based on the values in civicarrot.json
    * @return string A JSON string suitable for github actions matrix
    */
-  public function build(): string {
+  public function build($type = self::SINGLEPR): string {
     $repourl = $this->removeDotGit($this->repourl);
     // git.drupalcode.org will reject requests that look like stock php scripts
     $streamopts = ['http' => ['user_agent' => 'CiviCARROT (civicarrot@gmail.com)']];
     $context = stream_context_create($streamopts);
     $carrotjson = file_get_contents("{$repourl}/-/raw/{$this->commit}/tests/civicarrot.json", FALSE, $context);
     //$carrotjson = '{"singlePR":{"include":[{"php-versions":"7.3","drupal":"~9.1.1","civicrm":"5.40.x-dev"},{"php-versions":"7.4","drupal":"~9.2.4","civicrm":"dev-master"}]}}';
-    $matrix = json_decode($carrotjson, TRUE);
-    $matrix = $this->fillMatrix($matrix['singlePR'] ?? []);
-    return $this->replaceCarrotVars(json_encode($matrix));
+    switch ($type) {
+    case self::SINGLEPR:
+      $matrix = json_decode($carrotjson, TRUE);
+      $matrix = $this->fillMatrix($matrix[self::SINGLEPR] ?? []);
+      return $this->replaceCarrotVars(json_encode($matrix));
+    case self::PERIODIC:
+      return $carrotjson === FALSE ? '' : $this->replaceCarrotVars($carrotjson);
+    }
   }
 
   /**

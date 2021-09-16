@@ -105,6 +105,7 @@ class WorkflowController extends ControllerBase {
       // fall through to end
     }
     else {
+      $contact_id = $this->cacheBackend->get('gitlabgithubbridge_contact_id')->data ?? 0;
       $json = json_encode([
         'ref' => 'main',
         'inputs' => [
@@ -112,7 +113,7 @@ class WorkflowController extends ControllerBase {
           'prurl' => $request_body['object_attributes']['url'],
           'repourl' => $request_body['project']['git_http_url'],
           'notifyemail' => $email,
-          'contactid' => (string) ($this->cacheBackend->get('gitlabgithubbridge_contact_id')->data ?? 0),
+          'contactid' => (string) $contact_id,
         ],
       ]);
 
@@ -169,6 +170,10 @@ class WorkflowController extends ControllerBase {
           $this->mailer->mail('gitlabgithubbridge', 'trigger_failure', $email, 'en', ['result' => $response_str]);
         }
       }
+
+      if ($contact_id) {
+        $this->recordPotentialPeriodic($contact_id, $request_body['project']['git_http_url']);
+      }
     }
 
     $response = new JsonResponse(['status' => 'Ok']);
@@ -208,6 +213,27 @@ class WorkflowController extends ControllerBase {
    */
   private function assembleMatrix(string $repourl, string $commit): string {
     return (new MatrixBuilder($repourl, $commit))->build();
+  }
+
+  /**
+   * Store a candidate for periodic runs. Cron uses these later.
+   * @param int $contact_id
+   * @param string $repourl
+   */
+  private function recordPotentialPeriodic(int $contact_id, string $repourl): void {
+    \Civi\Api4\Activity::replace(FALSE)
+      ->setRecords([
+        [
+          'source_contact_id' => $contact_id,
+          'activity_type_id:name' => 'PeriodicCarrot',
+          'subject' => $repourl,
+          // This will force a refresh at next cron check.
+          'Periodic_Carrot.Last_Update' => '1970-01-01',
+        ],
+      ])
+      ->addWhere('subject', '=', $repourl)
+      ->addWhere('activity_type_id:name', '=', 'PeriodicCarrot')
+      ->execute();
   }
 
 }
