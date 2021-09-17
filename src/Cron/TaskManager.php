@@ -20,17 +20,37 @@ class TaskManager {
    */
   public function run() {
     $candidates = \Civi\Api4\Activity::get(FALSE)
-      ->addSelect('id', 'subject', 'Periodic_Carrot.Last_Update', 'Periodic_Carrot.Schedule')
+      ->addJoin(
+        'Contact AS con',
+        'INNER',
+        'ActivityContact',
+        ['id', '=', 'con.activity_id'],
+        ['con.record_type_id:name', '=', '"Activity Source"']
+      )->addJoin(
+        'Email AS e',
+        'LEFT',
+        NULL,
+        ['con.id', '=', 'e.contact_id'],
+        ['e.is_primary', '=', 1]
+      )->addSelect(
+        'id',
+        'subject',
+        'Periodic_Carrot.Last_Refresh',
+        'Periodic_Carrot.Last_Run',
+        'Periodic_Carrot.Schedule',
+        'con.CiviCarrot.Token',
+        'e.email'
+      )
       ->addWhere('activity_type_id:name', '=', 'PeriodicCarrot')
       ->execute();
 
     foreach ($candidates as $candidate) {
       $this->currentCandidate = $candidate;
-      if ($this->shouldRefresh($candidate['Periodic_Carrot.Last_Update'])) {
+      if ($this->shouldRefresh($candidate['Periodic_Carrot.Last_Refresh'])) {
         $matrix = (new MatrixBuilder($candidate['subject'], 'master'))->build(MatrixBuilder::PERIODIC);
         \Civi\Api4\Activity::update(FALSE)
           ->addValue('Periodic_Carrot.Schedule', $matrix)
-          ->addValue('Periodic_Carrot.Last_Update', date('Y-m-d H:i:s'))
+          ->addValue('Periodic_Carrot.Last_Refresh', date('Y-m-d H:i:s'))
           ->addWhere('id', '=', $candidate['id'])
           ->execute();
       }
@@ -52,20 +72,36 @@ class TaskManager {
     return ($yesterday > $d);
   }
 
-  private function processCandidate(array $schedule) {
-    foreach ($schedule as $cron_spec => $details) {
-      // @todo use cron parsing library to parse and figure out if it's time.
-      if (FALSE) {
-        // @todo now make http request to ourselves the same as the webhook?
-// this doesn't currently work because that endpoint is for singlePR's and it then looks up the matrix from the PR url, which doesn't exist here.
-// but if the request_body were to contain a matrix, then we could have that endpoint check for that first and use it, otherwise do what it currently does
+  /**
+   * @todo use cron parsing library to parse and figure out if it's time.
+   * @param string $cronspec A cron spec string, e.g. '0 0 * * *'
+   * @param string lastrun Date string in Y-m-d H:i:s format.
+   * @return bool
+   */
+  private function shouldRun(string $cronspec, string $lastrun): bool {
+    // if something about cronspec vs lastrun
+    return FALSE;
+  }
 
-        // If we're running as a drush script, need to pass the -l option, but
-        // within cv it just returns '/' and there is no option to pass. We
-        // could use CIVICRM_UF_BASEURL.
-        //$url = \Drupal::urlGenerator()->generateFromRoute('<front>', [], ['absolute' => TRUE]);
+  private function processCandidate(array $schedule) {
+    $last_run = json_decode($this->currentCandidate['Periodic_Carrot.Last_Run'], TRUE) ?? [];
+    foreach ($schedule as $schedule_id => $details) {
+      if ($this->shouldRun($details['cronspec'], $last_run[$schedule_id] ?? '1970-01-01 00:00:00')) {
+        $last_run[$schedule_id] = date('Y-m-d H:i:s');
+
+        // Make http request to ourselves the same as the webhook.
 
         $json = json_encode([
+          'gitlabgithubbridge_matrix' => $details['matrix'],
+          'project' => ['git_http_url' => $this->currentCandidate['subject']],
+          'object_attributes' => [
+            'last_commit' => ['id' => 'master'],
+            'url' => '',
+            'state' => 'opened',
+          ],
+          'object_kind' => 'merge_request',
+          'event_type' => 'merge_request',
+          'user' => ['email' => (string) $this->currentCandidate['email']],
         ]);
 
         $curl = curl_init();
@@ -74,7 +110,7 @@ class TaskManager {
           CURLOPT_RETURNTRANSFER => 1,
           CURLOPT_HEADER => FALSE,
           CURLOPT_URL => CIVICRM_UF_BASEURL . "/gitlabgithubbridge/{$details['testType']}",
-          CURLOPT_HTTPHEADER => ['Content-type: application/json'],
+          CURLOPT_HTTPHEADER => ['Content-type: application/json', 'HTTP_X_GITLAB_TOKEN' => $this->currentCandidate['CiviCarrot.Token']],
           CURLOPT_POST => TRUE,
           CURLOPT_POSTFIELDS => $json,
           CURLOPT_CONNECTTIMEOUT => 10,
@@ -100,6 +136,10 @@ class TaskManager {
         }
       }
     }
+    \Civi\Api4\Activity::update(FALSE)
+      ->addValue('Periodic_Carrot.Last_Run', json_encode($last_run))
+      ->addWhere('id', '=', $this->currentCandidate['id'])
+      ->execute();
   }
 
 }

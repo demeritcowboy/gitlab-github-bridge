@@ -109,7 +109,12 @@ class WorkflowController extends ControllerBase {
       $json = json_encode([
         'ref' => 'main',
         'inputs' => [
-          'matrix' => $this->assembleMatrix($request_body['project']['git_http_url'], $request_body['object_attributes']['last_commit']['id']),
+          // When we come here from periodic runs, the body already contains
+          // a matrix.
+          'matrix' => empty($request_body['gitlabgithubbridge_matrix']) ?
+            $this->assembleMatrix($request_body['project']['git_http_url'], $request_body['object_attributes']['last_commit']['id']) :
+            $request_body['gitlabgithubbridge_matrix'],
+          // From periodic runs this should be the empty string
           'prurl' => $request_body['object_attributes']['url'],
           'repourl' => $request_body['project']['git_http_url'],
           'notifyemail' => $email,
@@ -221,6 +226,7 @@ class WorkflowController extends ControllerBase {
    * @param string $repourl
    */
   private function recordPotentialPeriodic(int $contact_id, string $repourl): void {
+    // Is this what I want? I want update these fields only, but create a new record if it doesn't exist. Will this replace other fields with blank if the record already exists?
     \Civi\Api4\Activity::replace(FALSE)
       ->setRecords([
         [
@@ -228,7 +234,7 @@ class WorkflowController extends ControllerBase {
           'activity_type_id:name' => 'PeriodicCarrot',
           'subject' => $repourl,
           // This will force a refresh at next cron check.
-          'Periodic_Carrot.Last_Update' => '1970-01-01',
+          'Periodic_Carrot.Last_Refresh' => '1970-01-01',
         ],
       ])
       ->addWhere('subject', '=', $repourl)
