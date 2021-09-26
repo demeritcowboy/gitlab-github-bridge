@@ -226,10 +226,22 @@ class WorkflowController extends ControllerBase {
    * @param string $repourl
    */
   private function recordPotentialPeriodic(int $contact_id, string $repourl): void {
-    // Is this what I want? I want update these fields only, but create a new record if it doesn't exist. Will this replace other fields with blank if the record already exists?
-    \Civi\Api4\Activity::replace(FALSE)
+    // We want to update the refresh date only, but create a new record if it
+    // doesn't exist. Using replace() deletes the old record completely and
+    // then creates a new one with just the values in setRecords. Using save()
+    // you can't specify WHERE - it uses `id` to tell. So I don't see a way to
+    // do this in one statement if you don't already know the id for updates to
+    // existing, or aren't worried about deleting the old one.
+
+    $activity = \Civi\Api4\Activity::get(FALSE)
+      ->addWhere('subject', '=', $repourl)
+      ->addWhere('activity_type_id:name', '=', 'PeriodicCarrot')
+      ->execute()->first();
+
+    \Civi\Api4\Activity::save(FALSE)
       ->setRecords([
         [
+          'id' => ($activity['id'] ?? NULL),
           'source_contact_id' => $contact_id,
           'activity_type_id:name' => 'PeriodicCarrot',
           'subject' => $repourl,
@@ -237,8 +249,6 @@ class WorkflowController extends ControllerBase {
           'Periodic_Carrot.Last_Refresh' => '1970-01-01',
         ],
       ])
-      ->addWhere('subject', '=', $repourl)
-      ->addWhere('activity_type_id:name', '=', 'PeriodicCarrot')
       ->execute();
   }
 
