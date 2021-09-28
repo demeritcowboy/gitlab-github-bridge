@@ -113,7 +113,7 @@ class WorkflowController extends ControllerBase {
           // a matrix.
           'matrix' => empty($request_body['gitlabgithubbridge_matrix'])
           ? $this->assembleMatrix($request_body['project']['git_http_url'], $request_body['object_attributes']['last_commit']['id'])
-          : $request_body['gitlabgithubbridge_matrix'],
+          : json_encode($request_body['gitlabgithubbridge_matrix']),
           // From periodic runs this should be the empty string
           'prurl' => $request_body['object_attributes']['url'],
           'repourl' => $request_body['project']['git_http_url'],
@@ -176,7 +176,7 @@ class WorkflowController extends ControllerBase {
         }
       }
 
-      if ($contact_id) {
+      if ($contact_id && !empty($request_body['object_attributes']['url'])) {
         $this->recordPotentialPeriodic($contact_id, $request_body['project']['git_http_url']);
       }
     }

@@ -113,7 +113,7 @@ class TaskManager {
           CURLOPT_RETURNTRANSFER => 1,
           CURLOPT_HEADER => FALSE,
           CURLOPT_URL => CIVICRM_UF_BASEURL . "/gitlabgithubbridge/{$details['testType']}",
-          CURLOPT_HTTPHEADER => ['Content-type: application/json', 'HTTP_X_GITLAB_TOKEN' => $this->currentCandidate['con.CiviCarrot.Token']],
+          CURLOPT_HTTPHEADER => ['Content-type: application/json', 'X-Gitlab-Token: ' . $this->currentCandidate['con.CiviCarrot.Token']],
           CURLOPT_POST => TRUE,
           CURLOPT_POSTFIELDS => $json,
           CURLOPT_CONNECTTIMEOUT => 10,
