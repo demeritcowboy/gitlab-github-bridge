@@ -65,8 +65,8 @@ class TaskManager {
    * @return bool
    */
   private function shouldRefresh(string $datetime): bool {
-    $yesterday = new DateTime('-1 day');
-    $d = new DateTime($datetime);
+    $yesterday = new \DateTime('-1 day');
+    $d = new \DateTime($datetime);
     return ($yesterday > $d);
   }
 
@@ -78,7 +78,7 @@ class TaskManager {
    */
   private function shouldRun(string $cronspec, string $lastrun): bool {
     $cron = new Cron\CronExpression($cronspec);
-    return $cron->getNextRunDate($lastrun) < (new DateTime());
+    return $cron->getNextRunDate($lastrun) < (new \DateTime());
   }
 
   private function processCandidate(array $schedule) {
