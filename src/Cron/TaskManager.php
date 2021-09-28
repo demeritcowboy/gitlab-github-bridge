@@ -11,7 +11,7 @@ use Drupal\gitlabgithubbridge\Matrix\MatrixBuilder;
 class TaskManager {
 
   /**
-   * @var array $currentCandidate
+   * @var array
    */
   private $currentCandidate;
 
@@ -40,9 +40,7 @@ class TaskManager {
         'Periodic_Carrot.Schedule',
         'con.CiviCarrot.Token',
         'e.email'
-      )
-      ->addWhere('activity_type_id:name', '=', 'PeriodicCarrot')
-      ->execute();
+      )->addWhere('activity_type_id:name', '=', 'PeriodicCarrot')->execute();
 
     foreach ($candidates as $candidate) {
       $this->currentCandidate = $candidate;
@@ -63,7 +61,7 @@ class TaskManager {
 
   /**
    * Is the given datetime older than 1 day ago?
-   * @param string
+   * @param string $datetime
    * @return bool
    */
   private function shouldRefresh(string $datetime): bool {
@@ -75,7 +73,7 @@ class TaskManager {
   /**
    * Is it time to run?
    * @param string $cronspec A cron spec string, e.g. '0 0 * * *'
-   * @param string lastrun Date string in Y-m-d H:i:s format.
+   * @param string $lastrun Date string in Y-m-d H:i:s format.
    * @return bool
    */
   private function shouldRun(string $cronspec, string $lastrun): bool {

@@ -111,9 +111,9 @@ class WorkflowController extends ControllerBase {
         'inputs' => [
           // When we come here from periodic runs, the body already contains
           // a matrix.
-          'matrix' => empty($request_body['gitlabgithubbridge_matrix']) ?
-            $this->assembleMatrix($request_body['project']['git_http_url'], $request_body['object_attributes']['last_commit']['id']) :
-            $request_body['gitlabgithubbridge_matrix'],
+          'matrix' => empty($request_body['gitlabgithubbridge_matrix'])
+          ? $this->assembleMatrix($request_body['project']['git_http_url'], $request_body['object_attributes']['last_commit']['id'])
+          : $request_body['gitlabgithubbridge_matrix'],
           // From periodic runs this should be the empty string
           'prurl' => $request_body['object_attributes']['url'],
           'repourl' => $request_body['project']['git_http_url'],

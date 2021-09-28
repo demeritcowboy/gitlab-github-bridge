@@ -1,6 +1,9 @@
 <?php
 /* vim: set shiftwidth=2 tabstop=2 softtabstop=2: */
 
+/**
+ * hook_mail
+ */
 function gitlabgithubbridge_mail($key, &$message, $params) {
   switch ($key) {
     case 'merge_objects_only':

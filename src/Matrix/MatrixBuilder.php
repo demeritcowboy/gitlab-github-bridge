@@ -54,12 +54,13 @@ class MatrixBuilder {
     $carrotjson = file_get_contents("{$repourl}/-/raw/{$this->commit}/tests/civicarrot.json", FALSE, $context);
     //$carrotjson = '{"singlePR":{"include":[{"php-versions":"7.3","drupal":"~9.1.1","civicrm":"5.40.x-dev"},{"php-versions":"7.4","drupal":"~9.2.4","civicrm":"dev-master"}]}}';
     switch ($type) {
-    case self::SINGLEPR:
-      $matrix = json_decode($carrotjson, TRUE);
-      $matrix = $this->fillMatrix($matrix[self::SINGLEPR] ?? []);
-      return $this->replaceCarrotVars(json_encode($matrix));
-    case self::PERIODIC:
-      return $carrotjson === FALSE ? '' : $this->replaceCarrotVars($carrotjson);
+      case self::SINGLEPR:
+        $matrix = json_decode($carrotjson, TRUE);
+        $matrix = $this->fillMatrix($matrix[self::SINGLEPR] ?? []);
+        return $this->replaceCarrotVars(json_encode($matrix));
+
+      case self::PERIODIC:
+        return $carrotjson === FALSE ? '' : $this->replaceCarrotVars($carrotjson);
     }
   }
 
