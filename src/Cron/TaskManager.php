@@ -77,7 +77,7 @@ class TaskManager {
    * @return bool
    */
   private function shouldRun(string $cronspec, string $lastrun): bool {
-    $cron = new Cron\CronExpression($cronspec);
+    $cron = new \Cron\CronExpression($cronspec);
     return $cron->getNextRunDate($lastrun) < (new \DateTime());
   }
 
