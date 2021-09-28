@@ -73,14 +73,14 @@ class TaskManager {
   }
 
   /**
-   * @todo use cron parsing library to parse and figure out if it's time.
+   * Is it time to run?
    * @param string $cronspec A cron spec string, e.g. '0 0 * * *'
    * @param string lastrun Date string in Y-m-d H:i:s format.
    * @return bool
    */
   private function shouldRun(string $cronspec, string $lastrun): bool {
-    // if something about cronspec vs lastrun
-    return FALSE;
+    $cron = new Cron\CronExpression($cronspec);
+    return $cron->getNextRunDate($lastrun) < (new DateTime());
   }
 
   private function processCandidate(array $schedule) {
