@@ -38,11 +38,15 @@ class TaskManager {
         'Periodic_Carrot.Last_Refresh',
         'Periodic_Carrot.Last_Run',
         'Periodic_Carrot.Schedule',
-        'con.CiviCarrot.Token',
+        // Is this a bug in api? This is always missing. It works for anything
+        // non-custom. So let's look it up after based on contact.id
+        //'con.CiviCarrot.Token',
+        'con.id',
         'e.email'
       )->addWhere('activity_type_id:name', '=', 'PeriodicCarrot')->execute();
 
     foreach ($candidates as $candidate) {
+      $candidate = $this->workaroundApiThing($candidate);
       $this->currentCandidate = $candidate;
       $matrix = $candidate['Periodic_Carrot.Schedule'] ?? NULL;
       if ($this->shouldRefresh($candidate['Periodic_Carrot.Last_Refresh'])) {
@@ -140,6 +144,23 @@ class TaskManager {
       ->addValue('Periodic_Carrot.Last_Run', json_encode($last_run))
       ->addWhere('id', '=', $this->currentCandidate['id'])
       ->execute();
+  }
+
+  /**
+   * Fill in the custom contact field which doesn't seem to get populated
+   * during api join. Might be an older civi version problem.
+   * @param array $candidate
+   * @return array
+   */
+  private function workaroundApiThing(array $candidate): array {
+    if (!isset($candidate['con.CiviCarrot.Token'])) {
+      $custom = \Civi\Api4\Contact::get(FALSE)
+        ->addWhere('id', '=', $candidate['con.id'])
+        ->addSelect('CiviCarrot.Token')
+        ->execute()->first();
+      $candidate['con.CiviCarrot.Token'] = $custom['CiviCarrot.Token'] ?? 'Why missing?';
+    }
+    return $candidate;
   }
 
 }
