@@ -244,6 +244,7 @@ class WorkflowController extends ControllerBase {
           'id' => ($activity['id'] ?? NULL),
           'source_contact_id' => $contact_id,
           'activity_type_id:name' => 'PeriodicCarrot',
+          'status_id:name' => 'Completed',
           'subject' => $repourl,
           // This will force a refresh at next cron check.
           'Periodic_Carrot.Last_Refresh' => '1970-01-01',
