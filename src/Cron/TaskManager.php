@@ -100,7 +100,7 @@ class TaskManager {
           ],
           'object_kind' => 'merge_request',
           'event_type' => 'merge_request',
-          'user' => ['email' => (string) $this->currentCandidate['email']],
+          'user' => ['email' => (string) $this->currentCandidate['e.email']],
         ]);
 
         $curl = curl_init();
@@ -109,7 +109,7 @@ class TaskManager {
           CURLOPT_RETURNTRANSFER => 1,
           CURLOPT_HEADER => FALSE,
           CURLOPT_URL => CIVICRM_UF_BASEURL . "/gitlabgithubbridge/{$details['testType']}",
-          CURLOPT_HTTPHEADER => ['Content-type: application/json', 'HTTP_X_GITLAB_TOKEN' => $this->currentCandidate['CiviCarrot.Token']],
+          CURLOPT_HTTPHEADER => ['Content-type: application/json', 'HTTP_X_GITLAB_TOKEN' => $this->currentCandidate['con.CiviCarrot.Token']],
           CURLOPT_POST => TRUE,
           CURLOPT_POSTFIELDS => $json,
           CURLOPT_CONNECTTIMEOUT => 10,
@@ -119,6 +119,7 @@ class TaskManager {
           CURLOPT_COOKIEFILE => $cookie_file_path,
           CURLOPT_COOKIEJAR => $cookie_file_path,
         ];
+        curl_setopt_array($curl, $curl_params);
 
         $response_str = '';
         $exec_result = curl_exec($curl);
