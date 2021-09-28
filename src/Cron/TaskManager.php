@@ -44,6 +44,7 @@ class TaskManager {
 
     foreach ($candidates as $candidate) {
       $this->currentCandidate = $candidate;
+      $matrix = $candidate['Periodic_Carrot.Schedule'] ?? NULL;
       if ($this->shouldRefresh($candidate['Periodic_Carrot.Last_Refresh'])) {
         $matrix = (new MatrixBuilder($candidate['subject'], 'master'))->build(MatrixBuilder::PERIODIC);
         \Civi\Api4\Activity::update(FALSE)
@@ -72,19 +73,19 @@ class TaskManager {
 
   /**
    * Is it time to run?
-   * @param string $cronspec A cron spec string, e.g. '0 0 * * *'
+   * @param string $cronSpec A cron spec string, e.g. '0 0 * * *'
    * @param string $lastrun Date string in Y-m-d H:i:s format.
    * @return bool
    */
-  private function shouldRun(string $cronspec, string $lastrun): bool {
-    $cron = new \Cron\CronExpression($cronspec);
+  private function shouldRun(string $cronSpec, string $lastrun): bool {
+    $cron = new \Cron\CronExpression($cronSpec);
     return $cron->getNextRunDate($lastrun) < (new \DateTime());
   }
 
   private function processCandidate(array $schedule) {
     $last_run = json_decode($this->currentCandidate['Periodic_Carrot.Last_Run'], TRUE) ?? [];
     foreach ($schedule as $schedule_id => $details) {
-      if ($this->shouldRun($details['cronspec'], $last_run[$schedule_id] ?? '1970-01-01 00:00:00')) {
+      if ($this->shouldRun($details['cronSpec'], $last_run[$schedule_id] ?? '1970-01-01 00:00:00')) {
         $last_run[$schedule_id] = date('Y-m-d H:i:s');
 
         // Make http request to ourselves the same as the webhook.
