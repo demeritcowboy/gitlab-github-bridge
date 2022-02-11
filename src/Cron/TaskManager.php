@@ -19,6 +19,7 @@ class TaskManager {
    * Check candidates if it's time to run and then run them.
    */
   public function run() {
+    date_default_timezone_set('UTC');
     $candidates = \Civi\Api4\Activity::get(FALSE)
       ->addJoin(
         'Contact AS con',
