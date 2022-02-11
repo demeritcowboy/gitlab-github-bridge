@@ -12,3 +12,10 @@ gitlabgithubbridge.settings:
     _title: 'Gitlab Github Bridge Settings'
   requirements:
     _permission: 'administer site configuration'
+gitlabgithubbridge.actionsummary:
+  path: '/githubactionsummary'
+  defaults:
+    _controller: '\Drupal\gitlabgithubbridge\Controller\ActionSummaryController::run'
+    _title: 'Github Actions'
+  requirements:
+    _permission: 'access content'
