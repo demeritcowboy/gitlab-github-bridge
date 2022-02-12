@@ -84,6 +84,9 @@ class ActionSummaryController extends ControllerBase {
       }
     }
 
+    $success = \Drupal\Core\Render\Markup::create('<svg width="16" height="16" style="color: green; fill:currentColor;" class="octicon octicon-check-circle-fill" viewBox="0 0 16 16" version="1.1" aria-hidden="true"><path fill-rule="evenodd" d="M8 16A8 8 0 108 0a8 8 0 000 16zm3.78-9.72a.75.75 0 00-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 00-1.06 1.06l2 2a.75.75 0 001.06 0l4.5-4.5z"></path></svg>');
+    $failure = \Drupal\Core\Render\Markup::create('<svg width="16" height="16" style="color: red; fill:currentColor;" class="octicon octicon-x-circle-fill" viewBox="0 0 16 16" version="1.1" aria-hidden="true"><path fill-rule="evenodd" d="M2.343 13.657A8 8 0 1113.657 2.343 8 8 0 012.343 13.657zM6.03 4.97a.75.75 0 00-1.06 1.06L6.94 8 4.97 9.97a.75.75 0 101.06 1.06L8 9.06l1.97 1.97a.75.75 0 101.06-1.06L9.06 8l1.97-1.97a.75.75 0 10-1.06-1.06L8 6.94 6.03 4.97z"></path></svg>');
+
     $rows = [];
     foreach ($response['workflow_runs'] ?? [] as $counter => $run) {
       $data = ['name' => $run['name']];
@@ -100,12 +103,15 @@ class ActionSummaryController extends ControllerBase {
         }
         else {
           foreach ($response['jobs'] ?? [] as $job) {
-            $data['description'] = $job['name'];
-            $data['start'] = $job['started_at'];
-            $data['end'] = $job['completed_at'];
-            // must be passed by reference
-            $link = ['#markup' => '<a href="' . (new \Laminas\Escaper\Escaper('utf-8'))->escapeHtmlAttr($job['html_url']) . '">View Logs</a>'];
-            $data['url'] = \Drupal::service('renderer')->renderPlain($link);
+            $data['status'] = ($job['conclusion'] === 'success' ? $success : ($job['conclusion'] === 'failure' ? $failure : ''));
+            $parameters = explode('|', $job['name']);
+            $data['repo'] = str_replace('.git', '', basename(trim($parameters[0])));
+            $data['cms'] = trim($parameters[1]);
+            $data['civi'] = trim(str_replace('CiviCRM', '', $parameters[2]));
+            $data['start'] = (new \DateTime($job['started_at']))->format('Y-m-d H:i');
+            $data['duration'] = empty($job['completed_at']) ? '' : $this->getDiffInMinutes($job['started_at'], $job['completed_at']);
+            $link = \Drupal\Core\Render\Markup::create('<a href="' . (new \Laminas\Escaper\Escaper('utf-8'))->escapeHtmlAttr($job['html_url']) . '">View Logs</a>');
+            $data['url'] = $link;
             $rows[] = $data;
           }
         }
@@ -114,9 +120,12 @@ class ActionSummaryController extends ControllerBase {
 
     $header = [
       'Type',
-      'Parameters',
-      'Start',
-      'End',
+      'Status',
+      'Repo',
+      'CMS',
+      'CiviCRM',
+      'Start (GMT)',
+      'Minutes',
       'View Logs',
     ];
     return [
@@ -125,6 +134,18 @@ class ActionSummaryController extends ControllerBase {
       '#rows' => $rows,
       '#cache' => ['max-age' => 10],
     ];
+  }
+
+  /**
+   * @param string $d1
+   * @param string $d2
+   * @return string
+   */
+  private function getDiffInMinutes(string $d1, string $d2): string {
+    $d1 = new \DateTime($d1);
+    $d2 = new \DateTime($d2);
+    $diff = $d1->diff($d2);
+    return $diff->format('%i');
   }
 
 }
