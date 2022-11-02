@@ -117,6 +117,7 @@ class WorkflowController extends ControllerBase {
           // From periodic runs this should be the empty string
           'prurl' => $request_body['object_attributes']['url'],
           'repourl' => $request_body['project']['git_http_url'],
+          'repobranch' => $request_body['object_attributes']['target_branch'],
           'notifyemail' => $email,
           'contactid' => (string) $contact_id,
         ],
