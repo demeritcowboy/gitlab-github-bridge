@@ -77,7 +77,7 @@ class MatrixBuilder {
         $matrix['php-versions'] = ['CIVICARROT_PHP_SENSIBLE'];
       }
       if (empty($matrix['drupal'])) {
-        $matrix['drupal'] = ['CIVICARROT_DRUPAL_LATEST'];
+        $matrix['drupal'] = ['CIVICARROT_DRUPAL_PRIOR'];
       }
       if (empty($matrix['civicrm'])) {
         $matrix['civicrm'] = ['CIVICARROT_CIVI_RELEASECANDIDATE'];

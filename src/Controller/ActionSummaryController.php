@@ -130,6 +130,7 @@ class ActionSummaryController extends ControllerBase {
     ];
     return [
       '#type' => 'table',
+      '#attributes' => ['style' => 'text-align: center'],
       '#header' => $header,
       '#rows' => $rows,
       '#cache' => ['max-age' => 10],
