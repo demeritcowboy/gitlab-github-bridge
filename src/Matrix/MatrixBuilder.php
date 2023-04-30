@@ -186,10 +186,45 @@ class MatrixBuilder {
    * @return string
    */
   private function getPhpVersion(): string {
+    // Look up from php.net and take the first one that is marked stable.
+    // So e.g. if 8.0 is the oldest supported version, this would give 8.1
+    $streamopts = ['http' => ['user_agent' => 'CiviCARROT (civicarrot@gmail.com)']];
+    $context = stream_context_create($streamopts);
+    $supportedHtml = file_get_contents('https://www.php.net/supported-versions.php', FALSE, $context);
+    $old_err = libxml_use_internal_errors(TRUE);
+    $doc = new DOMDocument();
+    $doc->loadHTML($supportedHtml);
+    libxml_use_internal_errors($old_err);
+    $version = '';
+    if (!empty($doc)) {
+      foreach ($doc->getElementsByTagName('tr') as $tr_node) {
+        $attributes = $tr_node->attributes;
+        foreach ($attributes as $attr_node) {
+          if ($attr_node->nodeName == 'class' && $attr_node->nodeValue == 'stable') {
+            foreach ($tr_node->childNodes as $td_node) {
+              if ($td_node->nodeName == 'td') {
+                foreach ($td_node->childNodes as $a_node) {
+                  if ($a_node->nodeName == 'a') {
+                    $version = $a_node->nodeValue;
+                    break 4;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // This has fallen behind a bit so is now only used as a fallback.
     // Just use the version this site is running, since it runs drupal+civi
     // and so is likely to be a reasonable choice.
-    $php = explode('.', phpversion());
-    return "{$php[0]}.{$php[1]}";
+    if (empty($version)) {
+      $php = explode('.', phpversion());
+      $version = "{$php[0]}.{$php[1]}";
+    }
+
+    return $version;
   }
 
   /**
