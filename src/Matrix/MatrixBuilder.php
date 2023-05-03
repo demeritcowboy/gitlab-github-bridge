@@ -192,7 +192,7 @@ class MatrixBuilder {
     $context = stream_context_create($streamopts);
     $supportedHtml = file_get_contents('https://www.php.net/supported-versions.php', FALSE, $context);
     $old_err = libxml_use_internal_errors(TRUE);
-    $doc = new DOMDocument();
+    $doc = new \DOMDocument();
     $doc->loadHTML($supportedHtml);
     libxml_use_internal_errors($old_err);
     $version = '';
