@@ -106,8 +106,9 @@ class ActionSummaryController extends ControllerBase {
             $data['status'] = ($job['conclusion'] === 'success' ? $success : ($job['conclusion'] === 'failure' ? $failure : ''));
             $parameters = explode('|', $job['name']);
             $data['repo'] = str_replace('.git', '', basename(trim($parameters[0])));
-            $data['cms'] = trim($parameters[1]);
-            $data['civi'] = trim(str_replace('CiviCRM', '', $parameters[2]));
+            // some don't have these params, like the "Create Merge Request" action.
+            $data['cms'] = trim($parameters[1] ?? '');
+            $data['civi'] = trim(str_replace('CiviCRM', '', $parameters[2] ?? ''));
             $data['start'] = (new \DateTime($job['started_at']))->format('Y-m-d H:i');
             $data['duration'] = empty($job['completed_at']) ? '' : $this->getDiffInMinutes($job['started_at'], $job['completed_at']);
             $link = \Drupal\Core\Render\Markup::create('<a href="' . (new \Laminas\Escaper\Escaper('utf-8'))->escapeHtmlAttr($job['html_url']) . '">View Logs</a>');
