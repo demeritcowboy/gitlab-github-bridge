@@ -132,8 +132,8 @@ class MatrixBuilder {
         $version = '^' . ($version[0] - 1);
       }
       else {
-        // e.g. if latest was 9.2.4 then this would be ~9.1.1 (composer autoadjusts the last digit).
-        $version = "~{$version[0]}." . ($version[1] - 1) . '.1';
+        // e.g. if latest was 9.2.4 then this would be 9.1.*
+        $version = "{$version[0]}." . ($version[1] - 1) . '.*';
       }
     }
     // otherwise if self::CIVICARROT_DRUPAL_LATEST or something else then just leave as-is
