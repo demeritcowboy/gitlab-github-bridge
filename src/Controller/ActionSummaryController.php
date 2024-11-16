@@ -111,7 +111,8 @@ class ActionSummaryController extends ControllerBase {
             $data['civi'] = trim(str_replace('CiviCRM', '', $parameters[2] ?? ''));
             $data['start'] = (new \DateTime($job['started_at']))->format('Y-m-d H:i');
             $data['duration'] = empty($job['completed_at']) ? '' : $this->getDiffInMinutes($job['started_at'], $job['completed_at']);
-            $link = \Drupal\Core\Render\Markup::create('<a href="' . (new \Laminas\Escaper\Escaper('utf-8'))->escapeHtmlAttr($job['html_url']) . '">View Logs</a>');
+            // We know this is only used on php 8.1+ and the source is semi-trusted, so htmlspecialchars is good enough for attribute escaping here.
+            $link = \Drupal\Core\Render\Markup::create('<a href="' . htmlspecialchars($job['html_url']) . '">View Logs</a>');
             $data['url'] = $link;
             $rows[] = $data;
           }
