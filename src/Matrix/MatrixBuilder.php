@@ -176,6 +176,10 @@ class MatrixBuilder {
       $json = file_get_contents("https://repo.packagist.org/p2/{$package}.json", FALSE, $context);
       $info = json_decode($json, TRUE);
       self::$packagist[$package] = $info['packages'][$package][0] ?? [];
+      // skip beta versions - packagist reports these for drupal/core, but not for civi - not sure what the difference is
+      if (strpos(self::$packagist[$package]['version'] ?? '', 'beta') !== FALSE) {
+        self::$packagist[$package] = $info['packages'][$package][1] ?? [];
+      }
     }
     return self::$packagist[$package]['version'] ?? '';
   }
