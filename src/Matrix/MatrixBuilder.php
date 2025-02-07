@@ -157,7 +157,13 @@ class MatrixBuilder {
     }
     elseif ($stage === self::CIVICARROT_CIVI_RELEASECANDIDATE) {
       $version = explode('.', $version);
-      $version = "{$version[0]}." . ($version[1] + 1) . '.x-dev';
+      if ($version[0] == '5' && $version[1] == '82') {
+        // civi switched to 6.0 after 5.82
+        $version = '6.0.x-dev';
+      }
+      else {
+        $version = "{$version[0]}." . ($version[1] + 1) . '.x-dev';
+      }
     }
     // otherwise if self::CIVICARROT_CIVI_LATEST or something else then just leave as-is
     return $version;
