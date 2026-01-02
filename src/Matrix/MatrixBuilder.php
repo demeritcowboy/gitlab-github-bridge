@@ -109,7 +109,9 @@ class MatrixBuilder {
       $s = str_replace('CIVICARROT_CIVI_LATEST', $this->getCiviVersion(self::CIVICARROT_CIVI_LATEST), $s);
     }
     if (strpos($s, 'CIVICARROT_PHP_SENSIBLE') !== FALSE) {
-      $s = str_replace('CIVICARROT_PHP_SENSIBLE', $this->getPhpVersion(), $s);
+      //$s = str_replace('CIVICARROT_PHP_SENSIBLE', $this->getPhpVersion(), $s);
+      //temp hack until civi can deal with 8.4
+      $s = str_replace('CIVICARROT_PHP_SENSIBLE', '8.3', $s);
     }
     return $s;
   }
